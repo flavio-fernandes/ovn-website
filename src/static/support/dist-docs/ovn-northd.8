@@ -17,11 +17,11 @@
 .  PP
 .  I "\\$1"
 ..
-build/.PP
+.PP
 .SH "NAME"
 .PP
 .PP
-ovn-northd \- Open Virtual Network central control daemon
+ovn-northd and ovn-northd-ddlog \- Open Virtual Network central control daemon
 .SH "SYNOPSIS"
 .PP
 \fBovn\-northd\fR [\fIoptions\fR]
@@ -29,6 +29,9 @@ ovn-northd \- Open Virtual Network central control daemon
 .PP
 .PP
 \fBovn\-northd\fR is a centralized daemon responsible for translating the high-level OVN configuration into logical configuration consumable by daemons such as \fBovn\-controller\fR\[char46] It translates the logical network configuration in terms of conventional network concepts, taken from the OVN Northbound Database (see \fBovn\-nb\fR(5)), into logical datapath flows in the OVN Southbound Database (see \fBovn\-sb\fR(5)) below it\[char46]
+.PP
+.PP
+\fBovn\-northd\fR is implemented in C\[char46] \fBovn\-northd\-ddlog\fR is a compatible implementation written in DDlog, a language for incremental database processing\[char46] This documentation applies to both implementations, with differences indicated where relevant\[char46]
 .SH "OPTIONS"
 .TP
 \fB\-\-ovnnb\-db=\fIdatabase\fB\fR
@@ -114,7 +117,7 @@ Sets the log pattern for \fIdestination\fR to \fIpattern\fR\[char46] Refer to \f
 Sets the RFC5424 facility of the log message\[char46] \fIfacility\fR can be one of \fBkern\fR, \fBuser\fR, \fBmail\fR, \fBdaemon\fR, \fBauth\fR, \fBsyslog\fR, \fBlpr\fR, \fBnews\fR, \fBuucp\fR, \fBclock\fR, \fBftp\fR, \fBntp\fR, \fBaudit\fR, \fBalert\fR, \fBclock2\fR, \fBlocal0\fR, \fBlocal1\fR, \fBlocal2\fR, \fBlocal3\fR, \fBlocal4\fR, \fBlocal5\fR, \fBlocal6\fR or \fBlocal7\fR\[char46] If this option is not specified, \fBdaemon\fR is used as the default for the local system syslog and \fBlocal0\fR is used while sending a message to the target provided via the \fB\-\-syslog\-target\fR option\[char46]
 .TP
 \fB\-\-log\-file\fR[\fB=\fR\fIfile\fR]
-Enables logging to a file\[char46] If \fIfile\fR is specified, then it is used as the exact name for the log file\[char46] The default log file name used if \fIfile\fR is omitted is \fB/usr/var/log/ovn/\fIprogram\fB\[char46]log\fR\[char46]
+Enables logging to a file\[char46] If \fIfile\fR is specified, then it is used as the exact name for the log file\[char46] The default log file name used if \fIfile\fR is omitted is \fB/usr/local/var/log/ovn/\fIprogram\fB\[char46]log\fR\[char46]
 .TP
 \fB\-\-syslog\-target=\fR\fIhost\fR\fB:\fR\fIport\fR
 Send syslog messages to UDP \fIport\fR on \fIhost\fR, in addition to the system syslog\[char46] The \fIhost\fR must be a numerical IP address, not a hostname\[char46]
@@ -208,6 +211,19 @@ If all databases in a clustered southbound database are removed from disk, then 
 Reset northbound database cluster status when databases are destroyed and rebuilt\[char46]
 .IP
 This performs the same task as \fBsb\-cluster\-state\-reset\fR except for the northbound database client\[char46]
+.RE
+.PP
+.PP
+Only \fBovn\-northd\-ddlog\fR supports the following commands:
+.RS
+.TP
+\fBenable\-cpu\-profiling\fR
+.TQ .5in
+\fBdisable\-cpu\-profiling\fR
+Enables or disables profiling of CPU time used by the DDlog engine\[char46] When CPU profiling is enabled, the \fBprofile\fR command (see below) will include DDlog CPU usage statistics in its output\[char46] Enabling CPU profiling will slow \fBovn\-northd\-ddlog\fR\[char46] Disabling CPU profiling does not clear any previously recorded statistics\[char46]
+.TP
+\fBprofile\fR
+Outputs a profile of the current and peak sizes of arrangements inside DDlog\[char46] This profiling data can be useful for optimizing DDlog code\[char46] If CPU profiling was previously enabled (even if it was later disabled), the output also includes a CPU time profile\[char46] See \fBProfiling\fR inside the tutorial in the DDlog repository for an introduction to profiling DDlog\[char46]
 .RE
 .SH "ACTIVE-STANDBY FOR HIGH AVAILABILITY"
 .PP
@@ -1534,6 +1550,8 @@ Ingress Table 5: UNSNAT on Gateway Routers
 .RS
 .IP \(bu
 If the Gateway router has been configured to force SNAT any previously DNATted packets to \fIB\fR, a priority\-110 flow matches \fBip && ip4\[char46]dst == \fIB\fB\fR or \fBip && ip6\[char46]dst == \fIB\fB\fR with an action \fBct_snat; \fR\[char46]
+.IP
+If the Gateway router is configured with \fBlb_force_snat_ip=router_ip\fR then for every logical router port \fIP\fR attached to the Gateway router with the router ip \fIB\fR, a priority\-110 flow is added with the match \fBinport == \fIP\fB && ip4\[char46]dst == \fIB\fB\fR or \fBinport == \fIP\fB && ip6\[char46]dst == \fIB\fB\fR with an action \fBct_snat; \fR\[char46]
 .IP
 If the Gateway router has been configured to force SNAT any previously load-balanced packets to \fIB\fR, a priority\-100 flow matches \fBip && ip4\[char46]dst == \fIB\fB\fR or \fBip && ip6\[char46]dst == \fIB\fB\fR with an action \fBct_snat; \fR\[char46]
 .IP
